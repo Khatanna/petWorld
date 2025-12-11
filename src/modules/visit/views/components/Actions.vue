@@ -2,8 +2,8 @@
 import moment from "moment";
 import { ref } from "vue";
 
-const states: string[] = ["TODO", "COMPLETADO", "PENDIENTE", "CANCELADO"];
-const selectedState = ref(states[0]);
+// const states: string[] = ["TODO", "COMPLETADO", "PENDIENTE", "CANCELADO"];
+// const selectedState = ref(states[0]);
 const rangeDate = ref<
   | {
       from: string;
