@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { Visit } from "../../domain/visit.model";
-const props = defineProps<{
+const { appointments, showLoading } = defineProps<{
   appointments: Array<Visit>;
   showLoading: boolean;
 }>();
