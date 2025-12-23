@@ -1,68 +1,21 @@
 <script setup lang="ts">
-import { auth, db } from "@/app/config/firebase";
+import { auth } from "@/app/config/firebase";
 import ErrorWrapper from "@/components/ErrorWrapper.vue";
-import {
-  child,
-  ref as dbRef,
-  get,
-  limitToFirst,
-  query,
-} from "firebase/database";
-import { getCurrentInstance, onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useRoute } from "vue-router";
+import { useUserStore } from "../store/useUserStore";
 
 const drawerOpen = ref(true);
 const tenantName = import.meta.env.VITE_TENANT_NAME || "PetWorld";
 
-const avatarUrl = ref<string | null>(null);
-const userName = ref<string>(""); // New: User name
-const userEmail = ref<string>(""); // New: User email
 const route = useRoute();
 
 function toggleDrawer() {
   drawerOpen.value = !drawerOpen.value;
 }
 
-async function fetchAvatar() {
-  try {
-    if (!db) {
-      console.warn("Realtime Database no inicializada.");
-      return;
-    }
-
-    const root = dbRef(db);
-    const snapshot = await get(query(child(root, "users"), limitToFirst(1)));
-
-    if (snapshot.exists()) {
-      const users = snapshot.val();
-      const firstUser = Object.values(users)[0] as {
-        photoUrl?: string;
-        name?: string;
-        email?: string;
-      };
-
-      avatarUrl.value = firstUser.photoUrl || "https://via.placeholder.com/80";
-      userName.value = firstUser.name || "Usuario"; // Set user name
-      userEmail.value = firstUser.email || "email@example.com"; // Set user email
-    } else {
-      console.warn("La ruta /users está vacía");
-    }
-  } catch (error) {
-    console.error("Error fetching avatar (RTDB):", error);
-
-    const errorWrapper = getCurrentInstance()?.proxy?.$refs.errorWrapper as
-      | InstanceType<typeof ErrorWrapper>
-      | undefined;
-
-    if (errorWrapper) errorWrapper.setError(error as Error);
-  }
-}
-
+const userStore = useUserStore();
 const logout = () => auth.signOut();
-
-onMounted(() => {
-  fetchAvatar();
-});
 </script>
 
 <template>
@@ -129,7 +82,7 @@ onMounted(() => {
 
           <q-space></q-space>
 
-          <div class="q-pa-md border-t q-mt-auto">
+          <div class="q-pa-md border-t q-mt-auto" v-if="userStore.userData">
             <q-item class="bg-orange-1 rounded-borders cursor-pointer q-pa-sm">
               <q-item-section avatar>
                 <q-avatar
@@ -137,17 +90,23 @@ onMounted(() => {
                   text-color="orange-9 "
                   font-size="14px"
                   class="text-weight-bold"
-                  v-if="avatarUrl"
+                  v-if="userStore.userData?.photoUrl"
                 >
-                  <img :src="avatarUrl" :alt="userName"
-                /></q-avatar>
+                  <img
+                    :src="userStore.userData.photoUrl"
+                    :alt="userStore.userData.name"
+                  />
+                  /></q-avatar
+                >
               </q-item-section>
               <q-item-section>
                 <q-item-label
                   class="text-weight-bold text-grey-9 text-uppercase"
-                  >{{ userName }}</q-item-label
+                  >{{ userStore.userData.name }}</q-item-label
                 >
-                <q-item-label caption>{{ userEmail }}</q-item-label>
+                <q-item-label caption>{{
+                  userStore.userData.email
+                }}</q-item-label>
               </q-item-section>
             </q-item>
           </div>

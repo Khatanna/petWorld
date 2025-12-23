@@ -1,51 +1,29 @@
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
 import moment from "moment";
-import type { Payment, VisitCreate } from "../../domain/visit.model";
+import { computed, ref } from "vue";
+import type { PaymentFB } from "../../domain/visit.model";
+import { useFormStore } from "../../ui/store/useFormStore";
+import PaymentForm from "./PaymentForm.vue";
 
-const form = reactive<VisitCreate>({
-  petName: "Test",
-  color: "Test",
-  ownerName: "Test",
-  cutType: "Test",
-  phoneNumber: "Test",
-  price: 0,
-  date: new Date().toISOString(),
-  createdByUid: "1",
-  dateModified: new Date().toISOString(),
-  payments: [],
-  race: "Test",
-  state: "PENDIENTE",
-  feedback: "Test",
-  hourOfDelivery: "",
-  observation: "Test",
-});
+const formStore = useFormStore();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
   (e: "submit", form: any): void;
+  (e: "close"): void;
 }>();
 
-const payments = ref<Payment[]>([]);
 const showPaymentDialog = ref(false);
 const editingPaymentIndex = ref<number | null>(null);
 
-const paymentForm = reactive<Omit<Payment, "uid">>({
-  userUid: "1",
-  method: "cash",
-  amount: 0,
-  date: moment().format("DD-MM-YYYY"),
-  type: "advance",
-});
-
 const prePayment = computed(() => {
-  return payments.value.reduce((total: number, payment: Payment) => {
+  return formStore.form.payments.reduce((total: number, payment: PaymentFB) => {
     return total + payment.amount;
   }, 0);
 });
 
 const remainingBalance = computed(() => {
-  return form.price - prePayment.value;
+  return formStore.form.price - prePayment.value;
 });
 
 const modelValue = defineModel<boolean>();
@@ -53,55 +31,15 @@ const modelValue = defineModel<boolean>();
 const openPaymentDialog = (index: number | null = null) => {
   if (index !== null) {
     editingPaymentIndex.value = index;
-    const payment = payments.value[index];
-    if (!payment) return;
-    paymentForm.userUid = payment.userUid;
-    paymentForm.method = payment.method;
-    paymentForm.amount = payment.amount;
-    paymentForm.date = moment(payment.date).format("DD-MM-YYYY");
-    paymentForm.type = payment.type;
   } else {
-    // Nuevo pago
     editingPaymentIndex.value = null;
-    paymentForm.userUid = "1";
-    paymentForm.method = "cash";
-    paymentForm.amount = 0;
-    paymentForm.date = moment().format("DD-MM-YYYY");
-    paymentForm.type = "advance";
   }
   showPaymentDialog.value = true;
 };
 
-const savePayment = () => {
-  if (paymentForm.amount <= 0) {
-    return;
-  }
-
-  if (editingPaymentIndex.value !== null) {
-    const payment = payments.value[editingPaymentIndex.value];
-    if (!payment) return;
-    payment.method = paymentForm.method;
-    payment.amount = paymentForm.amount;
-    payment.date = paymentForm.date;
-    payment.type = paymentForm.type;
-  } else {
-    // Crear nuevo pago
-    const newPayment: Payment = {
-      uid: `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      ...paymentForm,
-    };
-    payments.value.push(newPayment);
-  }
-
-  // Actualizar los pagos en el formulario
-  form.payments = [...payments.value];
-
+const savePayment = (payment: PaymentFB) => {
+  formStore.addPayment(payment);
   showPaymentDialog.value = false;
-};
-
-const deletePayment = (index: number) => {
-  payments.value.splice(index, 1);
-  form.payments = [...payments.value];
 };
 
 const formatDate = (date: Date | string) => {
@@ -120,6 +58,7 @@ const getTypeLabel = (type: string) => {
 <template>
   <q-dialog
     v-model="modelValue"
+    @hide="emit('close')"
     transition-show="scale"
     transition-hide="scale"
   >
@@ -129,7 +68,7 @@ const getTypeLabel = (type: string) => {
       >
         <div>
           <div class="text-h6 text-weight-bold text-grey-9">
-            Registrar Nueva Visita
+            {{ formStore.mode === "edit" ? "Editar Visita" : "Nueva Visita" }}
           </div>
           <div class="text-caption text-grey-6">
             Complete los detalles de la mascota y el servicio.
@@ -161,7 +100,7 @@ const getTypeLabel = (type: string) => {
                 <q-input
                   outlined
                   dense
-                  v-model="form.petName"
+                  v-model="formStore.form.petName"
                   label="Nombre de la mascota"
                 >
                   <template v-slot:prepend
@@ -170,14 +109,24 @@ const getTypeLabel = (type: string) => {
                 </q-input>
               </div>
               <div class="col-12 col-md-6">
-                <q-input outlined dense v-model="form.race" label="Raza">
+                <q-input
+                  outlined
+                  dense
+                  v-model="formStore.form.race"
+                  label="Raza"
+                >
                   <template v-slot:prepend
                     ><q-icon name="category" color="grey-5"
                   /></template>
                 </q-input>
               </div>
               <div class="col-12 col-md-6">
-                <q-input outlined dense v-model="form.color" label="Color">
+                <q-input
+                  outlined
+                  dense
+                  v-model="formStore.form.color"
+                  label="Color"
+                >
                   <template v-slot:prepend
                     ><q-icon name="palette" color="grey-5"
                   /></template>
@@ -187,7 +136,7 @@ const getTypeLabel = (type: string) => {
                 <q-input
                   outlined
                   dense
-                  v-model="form.cutType"
+                  v-model="formStore.form.cutType"
                   label="Corte / Servicio"
                 >
                   <template v-slot:prepend
@@ -211,7 +160,7 @@ const getTypeLabel = (type: string) => {
                 <q-input
                   outlined
                   dense
-                  v-model="form.ownerName"
+                  v-model="formStore.form.ownerName"
                   label="Nombre del dueño"
                 >
                   <template v-slot:prepend
@@ -223,7 +172,7 @@ const getTypeLabel = (type: string) => {
                 <q-input
                   outlined
                   dense
-                  v-model="form.phoneNumber"
+                  v-model="formStore.form.phoneNumber"
                   label="Número de contacto"
                   mask="########"
                 >
@@ -249,7 +198,7 @@ const getTypeLabel = (type: string) => {
                 <q-input
                   outlined
                   dense
-                  v-model="form.price"
+                  v-model="formStore.form.price"
                   label="Costo Total"
                   prefix="$"
                   type="number"
@@ -288,7 +237,7 @@ const getTypeLabel = (type: string) => {
                 <q-input
                   outlined
                   dense
-                  v-model="form.hourOfDelivery"
+                  v-model="formStore.form.hourOfDelivery"
                   label="Hora de Entrega"
                   readonly
                 >
@@ -303,7 +252,7 @@ const getTypeLabel = (type: string) => {
                         transition-hide="scale"
                       >
                         <q-time
-                          v-model="form.hourOfDelivery"
+                          v-model="formStore.form.hourOfDelivery"
                           mask="HH:mm"
                           format24h
                         >
@@ -326,7 +275,6 @@ const getTypeLabel = (type: string) => {
 
           <q-separator></q-separator>
 
-          <!-- Sección de Pagos -->
           <div>
             <div
               class="text-subtitle2 text-primary text-uppercase text-weight-bold q-mb-md flex items-center justify-between"
@@ -346,7 +294,7 @@ const getTypeLabel = (type: string) => {
             </div>
 
             <div
-              v-if="payments.length === 0"
+              v-if="formStore.form.payments.length === 0"
               class="text-center text-grey-6 q-py-md"
             >
               <q-icon
@@ -358,10 +306,13 @@ const getTypeLabel = (type: string) => {
             </div>
 
             <q-list v-else bordered separator class="rounded-borders">
-              <q-item v-for="(payment, index) in payments" :key="payment.uid">
+              <q-item
+                v-for="(payment, index) in formStore.form.payments"
+                :key="index"
+              >
                 <q-item-section avatar>
                   <q-avatar
-                    :color="payment.method === 'cash' ? 'green' : 'blue'"
+                    :color="payment.method === 'EFECTIVO' ? 'green' : 'blue'"
                     text-color="white"
                     icon="payment"
                   ></q-avatar>
@@ -396,7 +347,7 @@ const getTypeLabel = (type: string) => {
                       color="negative"
                       icon="delete"
                       size="sm"
-                      @click="deletePayment(index)"
+                      @click="formStore.removePayment(index)"
                     >
                       <q-tooltip>Eliminar</q-tooltip>
                     </q-btn>
@@ -412,7 +363,7 @@ const getTypeLabel = (type: string) => {
             </div>
             <q-input
               outlined
-              v-model="form.observation"
+              v-model="formStore.form.observation"
               type="textarea"
               rows="3"
               placeholder="Alergias, comportamiento, notas especiales..."
@@ -433,115 +384,21 @@ const getTypeLabel = (type: string) => {
         ></q-btn>
         <q-btn
           unelevated
-          label="Registrar Visita"
+          :label="
+            formStore.mode === 'edit' ? 'Guardar Cambios' : 'Registrar Visita'
+          "
           color="primary"
           icon="check_circle"
           class="q-px-md"
-          @click="emit('submit', form)"
+          @click="emit('submit', formStore.form)"
         ></q-btn>
       </q-card-actions>
     </q-card>
   </q-dialog>
 
-  <!-- Dialog para gestionar pagos -->
-  <q-dialog v-model="showPaymentDialog">
-    <q-card style="width: 500px; max-width: 90vw">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">
-          {{ editingPaymentIndex !== null ? "Editar Pago" : "Nuevo Pago" }}
-        </div>
-        <q-space></q-space>
-        <q-btn icon="close" flat round dense v-close-popup></q-btn>
-      </q-card-section>
-
-      <q-card-section>
-        <q-form class="q-gutter-md">
-          <q-input
-            outlined
-            v-model.number="paymentForm.amount"
-            label="Monto"
-            prefix="$"
-            type="number"
-            :rules="[(val) => val > 0 || 'El monto debe ser mayor a 0']"
-          >
-            <template v-slot:prepend>
-              <q-icon name="attach_money" color="grey-5"></q-icon>
-            </template>
-          </q-input>
-
-          <q-select
-            outlined
-            v-model="paymentForm.method"
-            :options="[
-              { label: 'Efectivo', value: 'cash' },
-              { label: 'QR', value: 'qr' },
-            ]"
-            option-label="label"
-            option-value="value"
-            emit-value
-            map-options
-            label="Método de Pago"
-          >
-            <template v-slot:prepend>
-              <q-icon name="payment" color="grey-5"></q-icon>
-            </template>
-          </q-select>
-
-          <q-select
-            outlined
-            v-model="paymentForm.type"
-            :options="[
-              { label: 'Anticipo', value: 'advance' },
-              { label: 'Saldo', value: 'balance' },
-            ]"
-            option-label="label"
-            option-value="value"
-            emit-value
-            map-options
-            label="Tipo de Pago"
-          >
-            <template v-slot:prepend>
-              <q-icon name="category" color="grey-5"></q-icon>
-            </template>
-          </q-select>
-
-          <q-input outlined v-model="paymentForm.date" label="Fecha" readonly>
-            <template v-slot:prepend>
-              <q-icon name="event" color="grey-5"></q-icon>
-            </template>
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy
-                  cover
-                  transition-show="scale"
-                  transition-hide="scale"
-                >
-                  <q-date v-model="paymentForm.date" mask="YYYY-MM-DD">
-                    <div class="row items-center justify-end">
-                      <q-btn
-                        v-close-popup
-                        label="Cerrar"
-                        color="primary"
-                        flat
-                      />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
-        </q-form>
-      </q-card-section>
-
-      <q-card-actions align="right" class="q-pa-md">
-        <q-btn flat label="Cancelar" color="grey-7" v-close-popup></q-btn>
-        <q-btn
-          unelevated
-          :label="editingPaymentIndex !== null ? 'Actualizar' : 'Agregar'"
-          color="primary"
-          @click="savePayment"
-        ></q-btn>
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+  <payment-form
+    v-model:showPaymentDialog="showPaymentDialog"
+    v-model:editing-payment-index="editingPaymentIndex"
+    @save-payment="savePayment"
+  />
 </template>

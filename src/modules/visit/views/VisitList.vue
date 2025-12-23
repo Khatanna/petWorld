@@ -11,16 +11,19 @@ import type { Visit, VisitCreate } from "../domain/visit.model";
 import moment from "moment";
 import { useCalendarStore } from "@/core/store/useCalendarStore";
 import { useQuasar } from "quasar";
+import { useUserStore } from "@/core/store/useUserStore";
+import { useFormStore } from "../ui/store/useFormStore";
 
 const $q = useQuasar();
 const modalOpen = ref(false);
 const calendarStore = useCalendarStore();
+const userStore = useUserStore();
 
 const selectedDate = computed(() =>
   calendarStore.selectedDate.format("YYYY-MM-DD"),
 );
-const { getVisits, createVisit, deleteVisit, rateVisit } =
-  VisitRepository("CH0003");
+const { getVisits, createVisit, deleteVisit, rateVisit, editVisit } =
+  VisitRepository(userStore.userData!.tenantId!);
 const { isLoading, isFetching, data, error, refetch } = useQuery<
   Visit[],
   Error,
@@ -41,13 +44,13 @@ const { isLoading, isFetching, data, error, refetch } = useQuery<
     });
   },
   initialData: [],
-  refetchOnWindowFocus: true,
+  refetchOnWindowFocus: false,
 });
 
 const showError = computed(() => error.value);
 const showLoading = computed(() => isLoading.value || isFetching.value);
 
-const { mutate } = useMutation({
+const { mutate: createVisitMutation } = useMutation({
   mutationFn: (newVisit: VisitCreate) => createVisit(newVisit),
   onMutate() {
     $q.notify({
@@ -73,6 +76,33 @@ const { mutate } = useMutation({
   },
 });
 
+const { mutate: updateVisitMutation } = useMutation({
+  mutationFn: ({ visit, visitId }: { visitId: string; visit: Visit }) =>
+    editVisit(visitId, visit),
+  onMutate() {
+    $q.notify({
+      type: "info",
+      message: "Actualizando visita...",
+      timeout: 1000,
+    });
+  },
+  onSuccess() {
+    $q.notify({
+      type: "positive",
+      message: "Visita actualizada con éxito",
+      timeout: 2000,
+    });
+    refetch();
+  },
+  onError(error) {
+    $q.notify({
+      type: "negative",
+      message: `Error al actualizar la visita: ${error.message}`,
+      timeout: 3000,
+    });
+  },
+});
+
 const days = computed(() => {
   const daysArray = [];
   const totalDays = calendarStore.range.end.date();
@@ -90,8 +120,22 @@ const days = computed(() => {
   return daysArray;
 });
 
-const handleSubmit = (visit: VisitCreate) => {
-  mutate(visit);
+const handleSubmit = (data: VisitCreate | Visit) => {
+  console.log(formStore.mode);
+  if (formStore.mode === "edit") {
+    const visit = data as Visit;
+    console.log(visit, visit.id);
+    updateVisitMutation({
+      visit,
+      visitId: visit.id!,
+    });
+  } else {
+    const visit = data as VisitCreate;
+    createVisitMutation({
+      ...visit,
+      hourOfDelivery: moment(visit.hourOfDelivery, "HH:mm").toISOString(),
+    });
+  }
   modalOpen.value = false;
 };
 
@@ -188,10 +232,17 @@ const handleChangeRange = (
   }
   refetch();
 };
+
+const formStore = useFormStore();
+const handleEdit = (visit: Visit) => {
+  formStore.setForm(visit);
+  formStore.setMode("edit");
+  modalOpen.value = true;
+};
 </script>
 
 <template>
-  <q-page class="q-pa-lg full-height">
+  <q-page class="full-height" padding>
     <div v-if="showError" class="text-center q-py-xl text-negative">
       <q-icon name="error" size="4rem" class="q-mb-md"></q-icon>
       <div>
@@ -213,10 +264,15 @@ const handleChangeRange = (
           :showLoading="showLoading"
           @delete="handleDelete"
           @rate="handleRate"
+          @edit="handleEdit"
         />
       </div>
     </div>
-    <VisitFormDialog v-model="modalOpen" @submit="handleSubmit" />
+    <VisitFormDialog
+      v-model="modalOpen"
+      @submit="handleSubmit"
+      @close="formStore.resetForm"
+    />
   </q-page>
 </template>
 

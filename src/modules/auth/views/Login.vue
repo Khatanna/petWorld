@@ -1,10 +1,15 @@
 <script lang="ts" setup>
-import { signInWithPopup, auth, provider } from "../../../app/config/firebase";
 import google from "@/core/assets/google.png";
 import logo from "@/core/assets/logo.png";
+import { useUserStore } from "@/core/store/useUserStore";
+import { auth, provider, signInWithPopup } from "../../../app/config/firebase";
 
+const userStore = useUserStore();
 const loginGoogle = async () => {
   try {
+    provider.addScope("https://www.googleapis.com/auth/userinfo.profile");
+    provider.addScope("https://www.googleapis.com/auth/userinfo.email");
+
     await signInWithPopup(auth, provider);
   } catch (error) {
     console.error("Error en login:", error);
@@ -17,7 +22,7 @@ const loginGoogle = async () => {
     <q-page-container style="height: 100vh" id="page-container-login">
       <q-page class="flex flex-center column">
         <img :src="logo" alt="logo" width="250" class="q-mb-xl" id="logo" />
-        <q-btn @click="loginGoogle" color="white">
+        <q-btn @click="loginGoogle" color="white" :loading="userStore.loading">
           <q-avatar size="24px">
             <img :src="google" />
           </q-avatar>

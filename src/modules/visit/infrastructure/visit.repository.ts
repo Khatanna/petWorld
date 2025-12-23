@@ -8,6 +8,7 @@ import {
   endBefore,
   startAt,
   set,
+  update,
   push,
 } from "firebase/database";
 import type { VisitServiceParams } from "../domain/visist-repository.model";
@@ -67,7 +68,7 @@ const rateVisit =
 const editVisit =
   (tenantId: string) => async (visitId: string, visit: Visit) => {
     const visitRef = ref(db, `visits/${tenantId}/${visitId}`);
-    await set(visitRef, visit);
+    await update(visitRef, visit);
   };
 
 export const VisitRepository = (tenantId: string) => ({

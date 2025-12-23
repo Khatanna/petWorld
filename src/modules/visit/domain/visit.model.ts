@@ -19,7 +19,7 @@ export type Visit = {
   state: string;
   observation?: string | null;
   hourOfDelivery?: moment.Moment | null;
-  payments: Payment[];
+  payments?: Payment[];
   feedback?: string;
 };
 
@@ -33,7 +33,7 @@ export type VisitCreate = {
   price: number;
   phoneNumber: string;
   race: string;
-  payments: Payment[];
+  payments: PaymentFB[];
   hourOfDelivery?: string | null;
   observation?: string | null;
   createdByUid: string;
@@ -46,11 +46,14 @@ type Service = {
   userUid: string;
 };
 
-export type Payment = {
-  uid: string;
-  userUid: string;
-  method: "cash" | "qr";
+export type PaymentFB = {
   amount: number;
   date: string;
-  type: "advance" | "balance";
+  method: "EFECTIVO" | "QR";
+  type: "ANTICIPO" | "SALDO";
+  userUid: string;
 };
+
+export type Payment = {
+  uid: string;
+} & PaymentFB;

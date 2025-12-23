@@ -35,7 +35,7 @@ const getRandomColor = (seed: string) => {
 };
 
 const emit = defineEmits<{
-  (e: "edit", id: string): void;
+  (e: "edit", visit: Visit): void;
   (e: "delete", id: string): void;
   (e: "generateConsent", id: string): void;
   (e: "generateConsent2", id: string): void;
@@ -147,7 +147,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('edit', apt.id)"
+                    @click="emit('edit', apt)"
                   >
                     <q-item-section avatar>
                       <q-icon name="edit" color="primary" />
