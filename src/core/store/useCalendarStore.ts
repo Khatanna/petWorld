@@ -40,5 +40,18 @@ export const useCalendarStore = defineStore("calendar", {
         !state.range.end.isSame(moment(), "day")
       );
     },
+    days: (state) => {
+      const daysArray = [];
+
+      let current = state.range.start.clone();
+      const end = state.range.end.clone();
+
+      while (current.isSameOrBefore(end, "day")) {
+        daysArray.push(current.clone());
+        current.add(1, "day");
+      }
+
+      return daysArray;
+    },
   },
 });

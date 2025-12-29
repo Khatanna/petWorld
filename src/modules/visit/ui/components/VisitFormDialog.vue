@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import moment from "moment";
 import { computed, ref } from "vue";
-import type { PaymentFB } from "../../domain/visit.model";
+import type { PaymentCreate } from "../../domain/visit.model";
 import { useFormStore } from "../../ui/store/useFormStore";
 import PaymentForm from "./PaymentForm.vue";
 
@@ -17,9 +16,12 @@ const showPaymentDialog = ref(false);
 const editingPaymentIndex = ref<number | null>(null);
 
 const prePayment = computed(() => {
-  return formStore.form.payments.reduce((total: number, payment: PaymentFB) => {
-    return total + payment.amount;
-  }, 0);
+  return formStore.form.payments.reduce(
+    (total: number, payment: PaymentCreate) => {
+      return total + payment.amount;
+    },
+    0,
+  );
 });
 
 const remainingBalance = computed(() => {
@@ -37,13 +39,9 @@ const openPaymentDialog = (index: number | null = null) => {
   showPaymentDialog.value = true;
 };
 
-const savePayment = (payment: PaymentFB) => {
+const savePayment = (payment: PaymentCreate) => {
   formStore.addPayment(payment);
   showPaymentDialog.value = false;
-};
-
-const formatDate = (date: Date | string) => {
-  return moment(date).format("DD/MM/YYYY");
 };
 
 const getMethodLabel = (method: string) => {
@@ -323,8 +321,7 @@ const getTypeLabel = (type: string) => {
                   >
                   <q-item-label caption>
                     {{ getMethodLabel(payment.method) }} •
-                    {{ getTypeLabel(payment.type) }} •
-                    {{ formatDate(payment.date) }}
+                    {{ getTypeLabel(payment.type) }}
                   </q-item-label>
                 </q-item-section>
                 <q-item-section side>

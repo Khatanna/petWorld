@@ -1,5 +1,9 @@
 import { defineStore } from "pinia";
-import type { PaymentFB, Visit, VisitCreate } from "../../domain/visit.model";
+import type {
+  PaymentCreate,
+  Visit,
+  VisitCreate,
+} from "../../domain/visit.model";
 import moment from "moment";
 import { auth } from "@/app/config/firebase";
 
@@ -20,9 +24,9 @@ export const useFormStore = defineStore("visitForm", {
         cutType: "",
         phoneNumber: "",
         price: 0,
-        date: moment().toISOString(true),
+        date: moment().format("YYYY-MM-DDTHH:mm:ss"),
         createdByUid: userId,
-        dateModified: moment().toISOString(true),
+        dateModified: moment().format("YYYY-MM-DDTHH:mm:ss"),
         payments: [],
         race: "",
         state: "PENDIENTE",
@@ -35,7 +39,6 @@ export const useFormStore = defineStore("visitForm", {
   },
   actions: {
     setForm(form: Visit) {
-      console.log(form);
       this.form = {
         id: form.id,
         color: form.color,
@@ -60,13 +63,14 @@ export const useFormStore = defineStore("visitForm", {
     setMode(mode: "create" | "edit") {
       this.mode = mode;
     },
-    addPayment(payment: PaymentFB) {
+    addPayment(payment: PaymentCreate) {
       this.form.payments.push(payment);
     },
     removePayment(index: number) {
       this.form.payments.splice(index, 1);
     },
     resetForm() {
+      const userId = auth.currentUser?.uid || "1";
       this.form = {
         petName: "",
         color: "",
@@ -74,9 +78,9 @@ export const useFormStore = defineStore("visitForm", {
         cutType: "",
         phoneNumber: "",
         price: 0,
-        date: new Date().toISOString(),
-        createdByUid: "1",
-        dateModified: new Date().toISOString(),
+        date: moment().format("YYYY-MM-DDTHH:mm:ss"),
+        createdByUid: userId,
+        dateModified: moment().format("YYYY-MM-DDTHH:mm:ss"),
         payments: [],
         race: "",
         state: "PENDIENTE",

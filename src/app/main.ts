@@ -1,7 +1,8 @@
 import { createApp } from "vue";
-import { Quasar, Notify, Dialog } from "quasar";
+import { Quasar, Notify, Dialog, BottomSheet } from "quasar";
 import { createPinia } from "pinia";
 import "@quasar/extras/material-icons/material-icons.css";
+import "@quasar/extras/mdi-v7/mdi-v7.css";
 import "quasar/src/css/index.sass";
 import { VueQueryPlugin } from "@tanstack/vue-query";
 import quasarLang from "quasar/lang/es";
@@ -31,6 +32,7 @@ myApp.use(Quasar, {
   plugins: {
     Notify,
     Dialog,
+    BottomSheet,
   },
   config: {
     brand: {

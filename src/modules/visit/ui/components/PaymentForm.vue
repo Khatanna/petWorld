@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ref } from "vue";
-import type { PaymentFB } from "../../domain/visit.model";
-import moment from "moment";
+import type { PaymentCreate } from "../../domain/visit.model";
 
 const showPaymentDialog = defineModel<boolean>("showPaymentDialog", {
   required: true,
@@ -10,26 +9,24 @@ const editingPaymentIndex = defineModel<number | null>("editingPaymentIndex", {
   required: false,
   default: null,
 });
-const paymentForm = ref<PaymentFB>({
+const paymentForm = ref<PaymentCreate>({
   amount: 0,
-  date: moment().format("YYYY-MM-DD"),
   method: "EFECTIVO",
-  type: "ANTICIPO",
+  type: "A/C",
   userUid: "",
 });
 
 const resetPaymentForm = () => {
   paymentForm.value = {
     amount: 0,
-    date: moment().format("YYYY-MM-DD"),
     method: "EFECTIVO",
-    type: "ANTICIPO",
+    type: "A/C",
     userUid: "",
   };
 };
 
 const emit = defineEmits<{
-  (e: "savePayment", payment: PaymentFB): void;
+  (e: "savePayment", payment: PaymentCreate): void;
 }>();
 </script>
 
@@ -81,8 +78,8 @@ const emit = defineEmits<{
             outlined
             v-model="paymentForm.type"
             :options="[
-              { label: 'Anticipo', value: 'advance' },
-              { label: 'Saldo', value: 'balance' },
+              { label: 'Anticipo', value: 'A/C' },
+              { label: 'Saldo', value: 'Saldo' },
             ]"
             option-label="label"
             option-value="value"
@@ -94,32 +91,6 @@ const emit = defineEmits<{
               <q-icon name="category" color="grey-5"></q-icon>
             </template>
           </q-select>
-
-          <q-input outlined v-model="paymentForm.date" label="Fecha" readonly>
-            <template v-slot:prepend>
-              <q-icon name="event" color="grey-5"></q-icon>
-            </template>
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy
-                  cover
-                  transition-show="scale"
-                  transition-hide="scale"
-                >
-                  <q-date v-model="paymentForm.date" mask="YYYY-MM-DD">
-                    <div class="row items-center justify-end">
-                      <q-btn
-                        v-close-popup
-                        label="Cerrar"
-                        color="primary"
-                        flat
-                      />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
         </q-form>
       </q-card-section>
 

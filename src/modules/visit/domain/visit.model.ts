@@ -12,14 +12,16 @@ export type Visit = {
   race: string;
   phoneNumber: string;
   createdByUid: string;
-  deliveredByUid?: string | null;
-  choped?: Service | null;
-  bathed?: Service | null;
-  brushed?: Service | null;
+  deliveredByUid?: string;
+  choped?: Service;
+  bathed?: Service;
+  brushed?: Service;
   state: string;
-  observation?: string | null;
-  hourOfDelivery?: moment.Moment | null;
+  observation?: string;
+  hourOfDelivery?: moment.Moment;
   payments?: Payment[];
+  primaryConsent?: Record<string, any>;
+  secondaryConsent?: Record<string, any>;
   feedback?: string;
 };
 
@@ -33,12 +35,32 @@ export type VisitCreate = {
   price: number;
   phoneNumber: string;
   race: string;
-  payments: PaymentFB[];
-  hourOfDelivery?: string | null;
-  observation?: string | null;
+  payments: PaymentCreate[];
+  hourOfDelivery?: string;
+  observation?: string;
   createdByUid: string;
   state: string;
-  feedback?: string | null;
+  feedback?: string;
+};
+
+export type VisitFirebase = {
+  petName: string;
+  ownerName: string;
+  cutType: string;
+  color: string;
+  date: string;
+  dateModified: string;
+  price: string;
+  phoneNumber: string;
+  race: string;
+  payments?: Record<string, PaymentFirebase>;
+  primaryConsent?: any;
+  secondaryConsent?: any;
+  hourOfDelivery?: string;
+  observation?: string;
+  createdByUid: string;
+  state: string;
+  feedback?: string;
 };
 
 type Service = {
@@ -46,14 +68,26 @@ type Service = {
   userUid: string;
 };
 
-export type PaymentFB = {
+export type PaymentCreate = {
+  amount: number;
+  method: "EFECTIVO" | "QR";
+  type: "A/C" | "Saldo";
+  userUid: string;
+};
+
+export type PaymentFirebase = {
   amount: number;
   date: string;
-  method: "EFECTIVO" | "QR";
-  type: "ANTICIPO" | "SALDO";
+  method: string;
+  type: string;
   userUid: string;
 };
 
 export type Payment = {
   uid: string;
-} & PaymentFB;
+  amount: number;
+  date: moment.Moment;
+  method: "EFECTIVO" | "QR";
+  type: "A/C" | "Saldo";
+  userUid: string;
+};

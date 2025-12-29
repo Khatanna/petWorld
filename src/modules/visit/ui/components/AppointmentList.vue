@@ -1,10 +1,13 @@
 <script lang="ts" setup>
+import { useQuasar } from "quasar";
 import type { Visit } from "../../domain/visit.model";
+import { computed } from "vue";
 const { appointments, showLoading } = defineProps<{
   appointments: Array<Visit>;
   showLoading: boolean;
 }>();
 
+const $q = useQuasar();
 const getRandomColor = (seed: string) => {
   const colors = [
     "red",
@@ -34,13 +37,36 @@ const getRandomColor = (seed: string) => {
   return colors[index] + "-4";
 };
 
+const isMobile = computed(() => $q.platform.is.mobile);
+
+const states: Record<string, string> = {
+  PENDIENTE: "primary",
+  COMPLETADO: "green",
+  CANCELADO: "negative",
+};
+
+const handleClickItem = (event: Event, item: Visit) => {
+  if (event.target instanceof HTMLElement) {
+    if (
+      event.target.closest("button") ||
+      event.target.closest(".q-menu") ||
+      event.target.closest(".q-icon") ||
+      event.target.closest(".i")
+    ) {
+      return;
+    }
+  }
+  emit("showDetail", item);
+};
+
 const emit = defineEmits<{
   (e: "edit", visit: Visit): void;
   (e: "delete", id: string): void;
-  (e: "generateConsent", id: string): void;
-  (e: "generateConsent2", id: string): void;
+  (e: "generateConsent", visit: Visit): void;
+  (e: "generateConsent2", visit: Visit): void;
   (e: "registerAnotherPet", id: string): void;
   (e: "rate", id: string, rate?: string): void;
+  (e: "showDetail", visit: Visit): void;
 }>();
 </script>
 
@@ -60,50 +86,61 @@ const emit = defineEmits<{
     <div>No hay visitas programadas para este día</div>
   </div>
   <template v-if="appointments.length">
-    <TransitionGroup name="appointments" tag="div">
-      <q-card v-for="apt in appointments" :key="apt.id" flat>
-        <q-card-section
-          class="row items-center justify-between no-wrap q-py-md"
+    <q-virtual-scroll :items="appointments" class="q-my-sm" v-slot="{ item }">
+      <TransitionGroup name="appointments" tag="div">
+        <q-item
+          :key="item.id"
+          clickable
+          v-ripple
+          @click="handleClickItem($event, item)"
         >
-          <div class="row items-center q-gutter-x-md col-grow">
-            <div
-              class="column items-center"
-              style="border-right: 1px solid #f0f0f0; min-width: 80px"
-            >
+          <q-item-section avatar v-if="!isMobile">
+            <div class="column items-center">
               <div class="text-h6 text-weight-bold text-grey-9">
-                {{ apt.date.clone().format("HH:mm") }}
+                {{ item.date.clone().format("HH:mm") }}
               </div>
               <div class="text-caption text-grey-5 text-weight-bold">
-                {{ apt.date.clone().format("DD/MM/YYYY") }}
+                {{ item.date.clone().format("DD/MM/YYYY") }}
               </div>
             </div>
-            <div class="row items-center q-gutter-x-md">
+          </q-item-section>
+          <q-item-section>
+            <div class="row items-center q-gutter-x-md no-wrap">
               <q-avatar
                 size="48px"
                 class="text-weight-bold bg-primary text-white"
               >
-                {{ apt.petName.charAt(0) }}
+                {{ item.petName.charAt(0) }}
               </q-avatar>
-              <div>
+              <div style="flex-grow: 1">
                 <div class="row items-center q-gutter-x-sm">
                   <div class="text-subtitle1 text-weight-bold text-grey-9">
-                    {{ apt.petName }}
+                    {{ item.petName }}
                   </div>
                   <q-chip
                     dense
                     size="sm"
-                    :color="getRandomColor(apt.race)"
+                    :color="getRandomColor(item.race)"
                     text-color="white"
                     class="text-weight-medium"
-                    >{{ apt.race }}</q-chip
+                    >{{ item.race }}</q-chip
+                  >
+                  <q-space />
+                  <q-chip
+                    dense
+                    size="sm"
+                    :color="states[item.state]"
+                    text-color="white"
+                    class="text-weight-medium"
+                    >{{ item.state }}</q-chip
                   >
                 </div>
                 <div
-                  class="text-caption text-grey-6 row items-center q-gutter-x-md q-mt-xs"
+                  class="text-caption text-grey-6 row items-center q-gutter-x-md q-mt-xs no-wrap"
                 >
                   <span class="flex items-center"
                     ><q-icon name="person" size="14px" class="q-mr-xs"></q-icon>
-                    {{ apt.ownerName }}</span
+                    {{ item.ownerName }}</span
                   >
                   <span class="flex items-center"
                     ><q-icon
@@ -111,35 +148,17 @@ const emit = defineEmits<{
                       size="14px"
                       class="q-mr-xs"
                     ></q-icon>
-                    {{ apt.cutType }}</span
+                    {{ item.cutType }}</span
                   >
+                  <span class="flex items-center" v-if="isMobile"
+                    ><q-icon name="watch" size="14px" class="q-mr-xs"></q-icon>
+                    {{ item.date.clone().format("HH:mm") }}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="row items-center q-gutter-x-md gt-xs">
-            <div class="text-right gt-sm">
-              <div class="text-subtitle2 text-weight-bold text-grey-9">
-                $ {{ apt.price.toFixed(2) }}
-              </div>
-              <div class="text-caption text-grey-5">Costo total</div>
-            </div>
-            <q-badge
-              :color="
-                apt.state.toLowerCase() === 'completado'
-                  ? 'green-1'
-                  : 'orange-1'
-              "
-              :text-color="
-                apt.state.toLowerCase() === 'completado'
-                  ? 'green-8'
-                  : 'orange-9'
-              "
-              class="q-px-sm q-py-xs text-weight-bold text-uppercase"
-              style="font-size: 11px; letter-spacing: 0.5px"
-            >
-              {{ apt.state }}
-            </q-badge>
+          </q-item-section>
+          <q-item-section side>
             <q-btn flat round color="grey-5" icon="more_vert">
               <q-menu anchor="bottom right" self="top right">
                 <q-list>
@@ -147,7 +166,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('edit', apt)"
+                    @click="emit('edit', item)"
                   >
                     <q-item-section avatar>
                       <q-icon name="edit" color="primary" />
@@ -158,7 +177,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('registerAnotherPet', apt.id)"
+                    @click="emit('registerAnotherPet', item.id)"
                   >
                     <q-item-section avatar>
                       <q-icon name="pets" />
@@ -169,7 +188,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('rate', apt.id, apt.feedback)"
+                    @click="emit('rate', item.id, item.feedback)"
                   >
                     <q-item-section avatar>
                       <q-icon name="star" color="yellow" />
@@ -180,7 +199,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('generateConsent', apt.id)"
+                    @click="emit('generateConsent', item)"
                   >
                     <q-item-section avatar>
                       <q-icon name="description" color="blue-7" />
@@ -193,7 +212,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('generateConsent2', apt.id)"
+                    @click="emit('generateConsent2', item)"
                   >
                     <q-item-section avatar>
                       <q-icon name="description" color="blue-7" />
@@ -207,7 +226,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('delete', apt.id)"
+                    @click="emit('delete', item.id)"
                   >
                     <q-item-section avatar>
                       <q-icon name="delete" color="negative" />
@@ -217,10 +236,10 @@ const emit = defineEmits<{
                 </q-list>
               </q-menu>
             </q-btn>
-          </div>
-        </q-card-section>
-      </q-card>
-    </TransitionGroup>
+          </q-item-section>
+        </q-item>
+      </TransitionGroup>
+    </q-virtual-scroll>
     <div>
       <div class="text-caption text-grey-5 text-center">
         Son todas las visitas por el momento 😀

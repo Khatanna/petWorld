@@ -71,3 +71,9 @@ onAuthStateChanged(auth, async (user) => {
 <template>
   <router-view />
 </template>
+
+<style>
+/* * {
+  outline: 1px solid red;
+} */
+</style>

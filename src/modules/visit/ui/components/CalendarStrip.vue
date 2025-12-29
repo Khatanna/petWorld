@@ -190,6 +190,9 @@ onUnmounted(() => {
               : '1px solid #e0e0e0',
         }"
       >
+        <div style="font-size: 0.5rem">
+          {{ date.format("MM") }}/{{ date.format("YY") }}
+        </div>
         <div class="text-caption text-uppercase text-weight-bold">
           {{ date.format("ddd") }}
         </div>
