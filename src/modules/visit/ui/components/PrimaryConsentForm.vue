@@ -1,140 +1,352 @@
 <script lang="ts" setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
+import { getCssVar } from "quasar";
+
+interface FormField {
+  key: string;
+  label: string;
+  type: "radio" | "checkbox" | "textarea" | "checkbox-group";
+  options?: Array<{ label: string; value: any }>;
+  placeholder?: string;
+  required?: boolean;
+  icon?: string;
+  hint?: string;
+}
+
+interface Props {
+  fields?: FormField[];
+  title?: string;
+  submitLabel?: string;
+  loading?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  title: "Formulario de Consentimiento",
+  submitLabel: "Enviar",
+  loading: false,
+  fields: () => [
+    {
+      key: "size",
+      label: "Tamaño",
+      type: "radio",
+      icon: "pets",
+      required: true,
+      options: ["XS", "S", "M", "L", "XL", "XXL"].map((v) => ({
+        label: v,
+        value: v,
+      })),
+    },
+    {
+      key: "observation",
+      label: "Observaciones",
+      type: "textarea",
+      icon: "notes",
+      placeholder: "Detalles importantes...",
+    },
+    {
+      key: "details",
+      label: "Detalles",
+      type: "checkbox-group",
+      icon: "checklist",
+      options: [
+        { label: "Pulgas", value: "Pulgas" },
+        { label: "Garrapatas", value: "Garrapatas" },
+        { label: "Otros", value: "Otros" },
+      ],
+    },
+    {
+      key: "antecedentes",
+      label: "Antecedentes",
+      type: "checkbox-group",
+      icon: "psychology",
+      options: [
+        { label: "Ansiedad", value: "Ansiedad" },
+        { label: "Agresividad", value: "Agresividad" },
+        { label: "Asustadizo", value: "Asustadizo" },
+      ],
+    },
+    {
+      key: "behavior",
+      label: "Comportamiento",
+      type: "radio",
+      icon: "sentiment_satisfied",
+      required: true,
+      options: ["Excelente", "Bueno", "Regular", "Malo"].map((v) => ({
+        label: v,
+        value: v,
+      })),
+    },
+    {
+      key: "ownerAuthorization",
+      label: "Autorización del propietario",
+      type: "radio",
+      icon: "verified_user",
+      required: true,
+      options: [
+        { label: "Sí", value: "Sí" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      key: "serviceType",
+      label: "Tipo de servicio",
+      type: "radio",
+      icon: "spa",
+      required: true,
+      options: ["Baño", "Mantención", "Servicio completo"].map((v) => ({
+        label: v,
+        value: v,
+      })),
+    },
+  ],
+});
 
 const emit = defineEmits<{
   (e: "submit", payload: any): void;
 }>();
 
-const size = ref(null);
-const behavior = ref(null);
-const ownerAuthorization = ref(null);
-const serviceType = ref(null);
-const observation = ref("");
+// Obtener color primario de Quasar
+const primaryColor = getCssVar("primary") || "#1976d2";
 
-const details = reactive({
-  Pulgas: false,
-  Garrapatas: false,
-  Otros: false,
+// Estado del formulario dinámico
+const formData = reactive<Record<string, any>>({});
+
+// Inicializar valores del formulario
+props.fields.forEach((field) => {
+  if (field.type === "checkbox-group") {
+    formData[field.key] = reactive({});
+    field.options?.forEach((opt) => {
+      formData[field.key][opt.value] = false;
+    });
+  } else {
+    formData[field.key] = null;
+  }
 });
 
-const antecedentes = reactive({
-  Ansiedad: false,
-  Agresividad: false,
-  Asustadizo: false,
+// Validación básica
+const isFormValid = computed(() => {
+  return props.fields
+    .filter((f) => f.required)
+    .every((f) => {
+      const value = formData[f.key];
+      return value !== null && value !== undefined && value !== "";
+    });
 });
-
-const sizeOptions = ["XS", "S", "M", "L", "XL", "XXL"].map((v) => ({
-  label: v,
-  value: v,
-}));
-
-const behaviorOptions = ["Excelente", "Regular", "Bueno", "Malo"].map((v) => ({
-  label: v,
-  value: v,
-}));
-
-const yesNoOptions = [
-  { label: "Sí", value: "Sí" },
-  { label: "No", value: "No" },
-];
-
-const serviceTypeOptions = ["Baño", "Mantención", "Servicio completo"].map(
-  (v) => ({ label: v, value: v }),
-);
 
 const submitForm = () => {
-  const formData = {
-    size: size.value,
-    observation: observation.value,
-    details: { ...details },
-    antecedentes: { ...antecedentes },
-    behavior: behavior.value,
-    ownerAuthorization: ownerAuthorization.value,
-    serviceType: serviceType.value,
-  };
-
-  emit("submit", formData);
+  if (!isFormValid.value) {
+    return;
+  }
+  emit("submit", { ...formData });
 };
 </script>
 
 <template>
-  <q-page padding>
-    <q-toolbar class="bg-primary text-white">
-      <q-toolbar-title>Formulario de Consentimiento</q-toolbar-title>
-    </q-toolbar>
-
-    <!-- Tamaño -->
-    <div class="q-mt-md">
-      <div class="text-bold">Tamaño</div>
-      <q-option-group v-model="size" type="radio" :options="sizeOptions" />
+  <div class="form-wrapper">
+    <!-- Header compacto -->
+    <div class="form-header" :style="{ background: primaryColor }">
+      <q-icon name="assignment" size="28px" />
+      <h2 class="form-title">{{ title }}</h2>
     </div>
 
-    <!-- Observación -->
-    <div class="q-mt-md">
-      <div class="text-bold">Observación</div>
-      <q-input
-        v-model="observation"
-        type="textarea"
-        outlined
-        placeholder="Escribe tus observaciones aquí"
-      />
-    </div>
+    <!-- Formulario compacto -->
+    <q-form @submit.prevent="submitForm" class="form-content">
+      <div v-for="field in fields" :key="field.key" class="form-field">
+        <!-- Label con icono -->
+        <div class="field-label">
+          <q-icon
+            v-if="field.icon"
+            :name="field.icon"
+            size="18px"
+            :color="primaryColor"
+          />
+          <span>
+            {{ field.label }}
+            <span v-if="field.required" class="required">*</span>
+          </span>
+        </div>
 
-    <!-- Detalle -->
-    <div class="q-mt-md">
-      <div class="text-bold">Detalle</div>
-      <q-checkbox
-        v-for="(_value, key) in details"
-        :key="key"
-        v-model="details[key]"
-        :label="key"
-      />
-    </div>
+        <!-- Campo según tipo -->
+        <div class="field-content">
+          <!-- Radio buttons inline -->
+          <q-option-group
+            v-if="field.type === 'radio'"
+            v-model="formData[field.key]"
+            :options="field.options"
+            color="primary"
+            type="radio"
+            inline
+            dense
+          />
 
-    <!-- Antecedentes -->
-    <div class="q-mt-md">
-      <div class="text-bold">Antecedentes</div>
-      <q-checkbox
-        v-for="(_value, key) in antecedentes"
-        :key="key"
-        v-model="antecedentes[key]"
-        :label="key"
-      />
-    </div>
+          <!-- Textarea compacto -->
+          <q-input
+            v-else-if="field.type === 'textarea'"
+            v-model="formData[field.key]"
+            type="textarea"
+            outlined
+            dense
+            :placeholder="field.placeholder"
+            rows="2"
+            maxlength="300"
+          />
 
-    <!-- Comportamiento -->
-    <div class="q-mt-md">
-      <div class="text-bold">Comportamiento</div>
-      <q-option-group
-        v-model="behavior"
-        type="radio"
-        :options="behaviorOptions"
-      />
-    </div>
+          <!-- Checkbox group inline -->
+          <div
+            v-else-if="field.type === 'checkbox-group'"
+            class="checkbox-inline"
+          >
+            <q-checkbox
+              v-for="option in field.options"
+              :key="option.value"
+              v-model="formData[field.key][option.value]"
+              :label="option.label"
+              color="primary"
+              dense
+            />
+          </div>
+        </div>
+      </div>
 
-    <!-- Autorización del dueño -->
-    <div class="q-mt-md">
-      <div class="text-bold">Autorización del dueño</div>
-      <q-option-group
-        v-model="ownerAuthorization"
-        type="radio"
-        :options="yesNoOptions"
-      />
-    </div>
-
-    <!-- Tipo de servicio -->
-    <div class="q-mt-md">
-      <div class="text-bold">Tipo de servicio</div>
-      <q-option-group
-        v-model="serviceType"
-        type="radio"
-        :options="serviceTypeOptions"
-      />
-    </div>
-
-    <!-- Enviar -->
-    <div class="q-mt-lg">
-      <q-btn label="Enviar" color="primary" @click="submitForm" />
-    </div>
-  </q-page>
+      <!-- Footer con botón -->
+      <div class="form-footer">
+        <q-btn
+          type="submit"
+          :label="submitLabel"
+          color="primary"
+          unelevated
+          :disable="!isFormValid || loading"
+          :loading="loading"
+          class="submit-btn"
+          icon-right="send"
+          no-caps
+        />
+      </div>
+    </q-form>
+  </div>
 </template>
+
+<style scoped>
+.form-wrapper {
+  max-width: 700px;
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.form-header {
+  color: white;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.form-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.form-content {
+  padding: 20px;
+}
+
+.form-field {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.form-field:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #37474f;
+  margin-bottom: 10px;
+}
+
+.required {
+  color: #f44336;
+  font-weight: 700;
+}
+
+.field-content {
+  padding-left: 26px;
+}
+
+.checkbox-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.form-footer {
+  text-align: center;
+}
+
+.submit-btn {
+  min-width: 160px;
+  padding: 8px 24px;
+  font-weight: 500;
+}
+
+/* Mobile optimizations */
+@media (max-width: 600px) {
+  .form-header {
+    padding: 16px;
+  }
+
+  .form-title {
+    font-size: 18px;
+  }
+
+  .form-content {
+    padding: 16px;
+  }
+
+  .form-field {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+  }
+
+  .field-label {
+    font-size: 13px;
+  }
+
+  .field-content {
+    padding-left: 0;
+  }
+
+  .checkbox-inline {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+  .form-header {
+    padding: 12px;
+  }
+
+  .form-content {
+    padding: 12px;
+  }
+
+  .form-field {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+}
+</style>

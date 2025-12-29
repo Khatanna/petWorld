@@ -395,7 +395,7 @@ const handleGenerateConsent = async (data: any) => {
       l: data.size === "L" ? "X" : "",
       xl: data.size === "XL" ? "X" : "",
       xxl: data.size === "XXL" ? "X" : "",
-      observaciones: data.observation,
+      observaciones: data.observation || "",
       p: data.details.Pulgas ? "X" : "",
       g: data.details.Garrapatas ? "X" : "",
       otros: data.details.Otros ? "X" : "",
@@ -479,6 +479,28 @@ const handleGenerateConsent2 = async (data: any) => {
   refetch();
 };
 
+async function onSendWhatsapp() {
+  if (!selectedVisit.value) {
+    return;
+  }
+
+  const visit = selectedVisit.value;
+  const tenantId = userStore.userData!.tenantId!;
+  const tenantName =
+    tenantId === "CH0001" ? "CANHIJOS" : "PURO AMOR ARTE CANINO";
+
+  const message =
+    tenantId === "CH0001"
+      ? `> Hola, ${visit.ownerName}.\n> Le escribimos de la peluquería canina *${tenantName}* para notificarle que su mascota ya está lista, puede pasar a recogerlo. Saludos`
+      : `> Hola, ${visit.ownerName}.\nLe escribimos de la estética canina *${tenantName}* ☺ 🐾 su mascotita estará lista en 15 min, puede pasar a recogerla. ¡Saludos!`;
+
+  const encodedMessage = encodeURIComponent(message);
+
+  const url = `https://wa.me/+591${visit.phoneNumber}?text=${encodedMessage}`;
+
+  window.open(url, "_blank");
+}
+
 const formStore = useFormStore();
 const handleEdit = (visit: Visit) => {
   formStore.setForm(visit);
@@ -497,7 +519,7 @@ const handleEdit = (visit: Visit) => {
     </div>
 
     <div v-else class="full-height flex column" style="flex-wrap: nowrap">
-      <StatCards />
+      <StatCards v-model="data" />
       <Actions @create="modalOpen = true" @dateRange="handleChangeRange" />
       <CalendarStrip
         :selectedDate="calendarStore.selectedDate"
@@ -627,6 +649,17 @@ const handleEdit = (visit: Visit) => {
                 <q-item-label caption>{{
                   selectedVisitForDialog.phoneNumber
                 }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-btn
+                  flat
+                  round
+                  icon="mdi-whatsapp"
+                  @click="onSendWhatsapp"
+                  target="_blank"
+                >
+                  <q-tooltip>Enviar WhatsApp</q-tooltip>
+                </q-btn>
               </q-item-section>
             </q-item>
             <q-item>

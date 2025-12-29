@@ -3,7 +3,6 @@ import { useUserStore } from "@/core/store/useUserStore";
 import { BillRepository } from "../../infrastructure/bill.repository";
 import { useQuery } from "@tanstack/vue-query";
 import { useCalendarStore } from "@/core/store/useCalendarStore";
-import StatCards from "@/modules/visit/ui/components/StatCards.vue";
 import CalendarStrip from "@/modules/visit/ui/components/CalendarStrip.vue";
 
 const calendarStore = useCalendarStore();
@@ -40,7 +39,6 @@ const {
       </q-banner>
     </div>
     <div v-else class="full-height flex column" style="flex-wrap: nowrap">
-      <StatCards />
       <CalendarStrip
         :selected-date="calendarStore.selectedDate"
         @update:selected-date="calendarStore.selectedDate = $event"

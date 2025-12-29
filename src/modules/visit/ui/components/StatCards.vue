@@ -1,6 +1,13 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useQuasar } from "quasar";
+import type { Visit } from "../../domain/visit.model";
+import moment from "moment";
+
+const visits = defineModel<Visit[]>({
+  type: Array as () => Visit[],
+  required: true,
+});
 
 const $q = useQuasar();
 const isMobile = computed(() => $q.screen.lt.sm);
@@ -30,6 +37,30 @@ const cards = [
     iconBg: "bg-grey-2 text-grey-8",
   },
 ];
+
+const stats = computed(() => {
+  const pendingVisits = visits.value.filter(
+    (visit) => visit.state === "PENDIENTE",
+  );
+
+  const completedVisits = visits.value.filter(
+    (visit) => visit.state === "COMPLETADO",
+  );
+
+  const estimatedIncome = completedVisits.reduce(
+    (total, visit) =>
+      total +
+      (visit.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0),
+    0,
+  );
+
+  return {
+    visitsToday: visits.value.length,
+    pendingVisits: pendingVisits.length,
+    completedVisits: completedVisits.length,
+    estimatedIncome,
+  };
+});
 </script>
 
 <template>
@@ -45,7 +76,9 @@ const cards = [
               >
                 Citas para hoy
               </div>
-              <div class="text-h4 text-weight-bold text-grey-9 q-mt-xs">12</div>
+              <div class="text-h4 text-weight-bold text-grey-9 q-mt-xs">
+                {{ stats.visitsToday }}
+              </div>
             </div>
             <div class="bg-blue-1 text-blue-8 q-pa-sm rounded-borders">
               <q-icon name="event" size="24px"></q-icon>
@@ -63,7 +96,9 @@ const cards = [
               >
                 Pendientes
               </div>
-              <div class="text-h4 text-weight-bold text-grey-9 q-mt-xs">5</div>
+              <div class="text-h4 text-weight-bold text-grey-9 q-mt-xs">
+                {{ stats.pendingVisits }}
+              </div>
             </div>
             <div class="bg-orange-1 text-orange-8 q-pa-sm rounded-borders">
               <q-icon name="schedule" size="24px"></q-icon>
@@ -81,7 +116,9 @@ const cards = [
               >
                 Completados
               </div>
-              <div class="text-h4 text-weight-bold text-grey-9 q-mt-xs">7</div>
+              <div class="text-h4 text-weight-bold text-grey-9 q-mt-xs">
+                {{ stats.completedVisits }}
+              </div>
             </div>
             <div class="bg-green-1 text-green-8 q-pa-sm rounded-borders">
               <q-icon name="check_circle" size="24px"></q-icon>
@@ -100,7 +137,7 @@ const cards = [
                 Ingresos Estimados
               </div>
               <div class="text-h4 text-weight-bold text-grey-9 q-mt-xs">
-                $ 12,400
+                {{ stats.estimatedIncome.toFixed(2) }}Bs.
               </div>
             </div>
             <div class="bg-grey-2 text-grey-8 q-pa-sm rounded-borders">
