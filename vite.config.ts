@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
         ),
       }),
       VitePWA({
-        registerType: "autoUpdate",
+        registerType: "prompt",
         includeAssets: ["favicon.ico", "robots.txt", "apple-touch-icon.png"],
         workbox: {
           cleanupOutdatedCaches: true,
