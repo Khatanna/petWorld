@@ -29,7 +29,9 @@ export default defineConfig(({ mode }) => {
         workbox: {
           cleanupOutdatedCaches: true,
           navigateFallback: "/index.html",
-          globPatterns: ["**/*.{js,css,html,png,svg,ico,json}"],
+          globPatterns: [
+            "**/*.{js,css,html,png,svg,ico,json,woff2,ttf,woff,eot}",
+          ],
         },
         manifest: {
           name: env.VITE_TENANT_NAME,
