@@ -2,7 +2,6 @@
 import { computed } from "vue";
 import { useQuasar } from "quasar";
 import type { Visit } from "../../domain/visit.model";
-import moment from "moment";
 
 const visits = defineModel<Visit[]>({
   type: Array as () => Visit[],
