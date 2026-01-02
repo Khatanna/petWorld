@@ -369,6 +369,9 @@ const handleOpenSecondaryConsentForm = (visit: Visit) => {
   secondConcentFormOpen.value = true;
 };
 
+const isSignatureProvided = computed(() => !!signature.value);
+
+// Modify handleGenerateConsent to clear the signature after generating the document
 const handleGenerateConsent = async (data: any) => {
   if (!selectedVisit.value) {
     return;
@@ -445,9 +448,11 @@ const handleGenerateConsent = async (data: any) => {
   });
 
   window.open(documentUrl, "_blank");
+  signature.value = null; // Clear the signature after generating the document
   refetch();
 };
 
+// Modify handleGenerateConsent2 to clear the signature after generating the document
 const handleGenerateConsent2 = async (data: any) => {
   if (!selectedVisit.value) {
     return;
@@ -506,6 +511,7 @@ const handleGenerateConsent2 = async (data: any) => {
     timeout: 2000,
   });
   window.open(documentUrl, "_blank");
+  signature.value = null; // Clear the signature after generating the document
   refetch();
 };
 
@@ -781,12 +787,20 @@ const handleEdit = (visit: Visit) => {
   </q-dialog>
   <q-dialog v-model="primaryConcentFormOpen">
     <div class="bg-white">
-      <PrimaryConsentForm @submit="handleGenerateConsent" />
+      <PrimaryConsentForm
+        @submit="handleGenerateConsent"
+        :isSignatureProvided="isSignatureProvided"
+        @open-signature="signatureOpen = true"
+      />
     </div>
   </q-dialog>
   <q-dialog v-model="secondConcentFormOpen">
     <div class="bg-white">
-      <SecondConsentForm @submit="handleGenerateConsent2" />
+      <SecondConsentForm
+        @submit="handleGenerateConsent2"
+        :isSignatureProvided="isSignatureProvided"
+        @open-signature="signatureOpen = true"
+      />
     </div>
   </q-dialog>
   <q-dialog v-model="signatureOpen">

@@ -18,6 +18,7 @@ interface Props {
   title?: string;
   submitLabel?: string;
   loading?: boolean;
+  isSignatureProvided?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -103,15 +104,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: "submit", payload: any): void;
+  (e: "open-signature"): void;
 }>();
 
-// Obtener color primario de Quasar
 const primaryColor = getCssVar("primary") || "#1976d2";
 
-// Estado del formulario dinámico
 const formData = reactive<Record<string, any>>({});
 
-// Inicializar valores del formulario
 props.fields.forEach((field) => {
   if (field.type === "checkbox-group") {
     formData[field.key] = reactive({});
@@ -123,7 +122,6 @@ props.fields.forEach((field) => {
   }
 });
 
-// Validación básica
 const isFormValid = computed(() => {
   return props.fields
     .filter((f) => f.required)
@@ -208,7 +206,6 @@ const submitForm = () => {
         </div>
       </div>
 
-      <!-- Footer con botón -->
       <div class="form-footer">
         <q-btn
           type="submit"
@@ -217,9 +214,17 @@ const submitForm = () => {
           unelevated
           :disable="!isFormValid || loading"
           :loading="loading"
-          class="submit-btn"
+          class="q-mr-sm"
           icon-right="send"
           no-caps
+        />
+
+        <q-btn
+          label="Firmar"
+          color="primary"
+          unelevated
+          @click="emit('open-signature')"
+          icon-right="create"
         />
       </div>
     </q-form>
@@ -293,12 +298,6 @@ const submitForm = () => {
 
 .form-footer {
   text-align: center;
-}
-
-.submit-btn {
-  min-width: 160px;
-  padding: 8px 24px;
-  font-weight: 500;
 }
 
 /* Mobile optimizations */

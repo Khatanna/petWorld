@@ -33,11 +33,11 @@ const save = () => {
   if (!signaturePad || signaturePad.isEmpty()) return;
 
   const base64 = signaturePad.toDataURL();
-  emit("saveSignature", base64);
+  emit("save-signature", base64); // Emit the signature
 };
 
 const emit = defineEmits<{
-  (e: "saveSignature", dataUrl: string): void;
+  (e: "save-signature", dataUrl: string): void;
 }>();
 </script>
 
