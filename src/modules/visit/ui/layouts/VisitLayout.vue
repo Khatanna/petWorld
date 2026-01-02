@@ -79,6 +79,7 @@ const {
   toggleService,
   setPrimaryConsent,
   setSecondaryConsent,
+  saveDocument,
 } = VisitRepository(userStore.userData!.tenantId!);
 const { isLoading, isFetching, data, error, refetch } = useQuery({
   queryKey: [
@@ -350,7 +351,7 @@ const handleOpenPrimaryConsentForm = (visit: Visit) => {
   selectedVisit.value = visit;
 
   if (visit.primaryConsent) {
-    handleGenerateConsent(visit.primaryConsent);
+    window.open(visit.primaryConsent.documentUrl, "_blank");
     return;
   }
 
@@ -361,7 +362,7 @@ const handleOpenSecondaryConsentForm = (visit: Visit) => {
   selectedVisit.value = visit;
 
   if (visit.secondaryConsent) {
-    handleGenerateConsent2(visit.secondaryConsent);
+    window.open(visit.secondaryConsent.documentUrl, "_blank");
     return;
   }
 
@@ -424,10 +425,26 @@ const handleGenerateConsent = async (data: any) => {
   const fileBlob = new Blob([response.data], {
     type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   });
-  const fileURL = URL.createObjectURL(fileBlob);
-  window.open(fileURL);
-  await setPrimaryConsent(selectedVisit.value.id, data);
   primaryConcentFormOpen.value = false;
+
+  const documentUrl = await saveDocument(
+    selectedVisit.value,
+    fileBlob,
+    userStore.userData!.uid!,
+  );
+
+  await setPrimaryConsent(selectedVisit.value.id, {
+    ...data,
+    documentUrl,
+  });
+
+  $q.notify({
+    type: "positive",
+    message: "Documento guardado con éxito.",
+    timeout: 2000,
+  });
+
+  window.open(documentUrl, "_blank");
   refetch();
 };
 
@@ -472,10 +489,23 @@ const handleGenerateConsent2 = async (data: any) => {
   const fileBlob = new Blob([response.data], {
     type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   });
-  const fileURL = URL.createObjectURL(fileBlob);
-  window.open(fileURL);
-  await setSecondaryConsent(selectedVisit.value.id, data);
+  const documentUrl = await saveDocument(
+    selectedVisit.value,
+    fileBlob,
+    userStore.userData!.uid!,
+  );
+  await setSecondaryConsent(selectedVisit.value.id, {
+    ...data,
+    documentUrl,
+  });
   secondConcentFormOpen.value = false;
+
+  $q.notify({
+    type: "positive",
+    message: "Documento guardado con éxito.",
+    timeout: 2000,
+  });
+  window.open(documentUrl, "_blank");
   refetch();
 };
 

@@ -1,4 +1,4 @@
-import { db } from "@/app/config/firebase";
+import { db, storage } from "@/app/config/firebase";
 import type {
   Payment,
   PaymentFirebase,
@@ -20,6 +20,11 @@ import {
 } from "firebase/database";
 import type { VisitServiceParams } from "../domain/visist-repository.model";
 import moment from "moment";
+import {
+  uploadBytes,
+  ref as firebaseStorageRef,
+  getDownloadURL,
+} from "firebase/storage";
 
 const mapPaymentFromFirebase = (
   key: string,
@@ -212,6 +217,45 @@ const setSecondaryConsent =
     await set(consentRef, consent);
   };
 
+const setUrlConsent =
+  (tenantId: string) => async (visitId: string, url: string, node: string) => {
+    const consentRef = ref(
+      db,
+      `visits/${tenantId}/${visitId}/${node}/documentUrl`,
+    );
+    await set(consentRef, url);
+  };
+
+const saveDocument =
+  (tenantId: string) => async (visis: Visit, content: Blob, userId: string) => {
+    try {
+      const fileName = `visits-consent/${tenantId}/${
+        visis.id
+      }-${moment().format("YYYYMMDDTHHmmss")}.docx`;
+      const storageRef = firebaseStorageRef(storage, `${fileName}`);
+
+      const snapshot = await uploadBytes(storageRef, content, {
+        contentType: content.type,
+        customMetadata: {
+          fileName,
+          visitId: visis.id,
+          userId,
+          date: moment().format("YYYY-MM-DDTHH:mm:ss"),
+        },
+      });
+
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      return downloadURL;
+    } catch (error: any) {
+      console.error("Full error:", error);
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      console.error("Server response:", error.customData);
+      throw error;
+    }
+  };
+
 export const VisitRepository = (tenantId: string) => ({
   getVisits: getVisits(tenantId),
   getVisitById: getVisitById(tenantId),
@@ -223,4 +267,6 @@ export const VisitRepository = (tenantId: string) => ({
   toggleService: toggleService(tenantId),
   setPrimaryConsent: setPrimaryConsent(tenantId),
   setSecondaryConsent: setSecondaryConsent(tenantId),
+  saveDocument: saveDocument(tenantId),
+  setUrlConsent: setUrlConsent(tenantId),
 });
