@@ -3,14 +3,54 @@ import google from "@/core/assets/google.png";
 import logo from "@/core/assets/logo.png";
 import { useUserStore } from "@/core/store/useUserStore";
 import { auth, provider, signInWithPopup } from "../../../app/config/firebase";
+import {
+  createUser,
+  getUserByEmail,
+} from "@/modules/user/infrastructure/user.repository";
+import { useQuasar } from "quasar";
 
 const userStore = useUserStore();
+const $q = useQuasar();
 const loginGoogle = async () => {
   try {
     provider.addScope("https://www.googleapis.com/auth/userinfo.profile");
     provider.addScope("https://www.googleapis.com/auth/userinfo.email");
 
-    await signInWithPopup(auth, provider);
+    const userCredential = await signInWithPopup(auth, provider);
+
+    const email = userCredential.user.providerData[0]?.email;
+
+    if (email) {
+      const user = await getUserByEmail(email);
+
+      if (user) {
+        if (!user?.allowed) {
+          $q.notify({
+            type: "info",
+            message:
+              "Usuario no autorizado. Por favor, contacte al administrador.",
+          });
+
+          return;
+        }
+        userStore.setUserData(user);
+      } else {
+        createUser({
+          allowed: false,
+          owner: false,
+          email: userCredential.user.providerData[0]?.email || "",
+          name: userCredential.user.providerData[0]?.displayName || "",
+          photoUrl: userCredential.user.providerData[0]?.photoURL || "",
+          tenantId: "",
+        });
+
+        $q.notify({
+          type: "info",
+          message:
+            "Usuario creado. Por favor, contacte al administrador para obtener acceso.",
+        });
+      }
+    }
   } catch (error) {
     console.error("Error en login:", error);
   }

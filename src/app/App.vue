@@ -10,7 +10,10 @@ import {
   equalTo,
 } from "firebase/database";
 import { useUserStore } from "@/core/store/useUserStore";
+import type { UserFirebase } from "@/modules/user/domain/user.model";
+import { useQuasar } from "quasar";
 
+const $q = useQuasar();
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -37,18 +40,22 @@ onAuthStateChanged(auth, async (user) => {
 
     if (snapshot.exists()) {
       const users = snapshot.val();
-      const firstUser = Object.values(users)[0] as
-        | {
-            uid: string;
-            email: string;
-            name: string;
-            photoUrl: string;
-            tenantId: string;
-          }
-        | undefined;
+      const firstUser = Object.values(users)[0] as UserFirebase;
 
       if (!firstUser) {
         console.warn("No se encontró ningún usuario en la ruta /users");
+        return;
+      }
+
+      if(firstUser.allowed === false) {
+        userStore.loading = false;
+        router.push("/login");
+
+        $q.notify({
+          type: "info",
+          message:
+            "Usuario no autorizado. Por favor, contacte al administrador.",
+        });
         return;
       }
 

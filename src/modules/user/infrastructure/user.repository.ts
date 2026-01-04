@@ -3,15 +3,18 @@ import {
   equalTo,
   get,
   orderByChild,
+  push,
   query,
   ref,
+  set,
   update,
 } from "firebase/database";
 import type { User, UserFirebase } from "../domain/user.model";
 
-const mapUserFromFirebase = (user: UserFirebase): User => {
+const mapUserFromFirebase = (key: string, user: UserFirebase): User => {
   return {
     ...user,
+    id: key,
   };
 };
 
@@ -53,15 +56,23 @@ const toggleAllowed = (tenantId: string) => async (userId: string) => {
   });
 };
 
+const asignTenantId = (tenantId: string) => async (userId: string) => {
+  const userRef = ref(db, `users/${userId}`);
+  await update(userRef, {
+    allowed: true,
+    tenantId,
+  });
+};
+
 const getUsers = (tenantId: string) => async () => {
   const root = ref(db, `users`);
-  const usersQuery = query(root, orderByChild("tenantId"), equalTo(tenantId));
-  const snapshot = await get(usersQuery);
+  // const usersQuery = query(root, orderByChild("tenantId"), equalTo(tenantId));
+  const snapshot = await get(root);
 
   if (snapshot.exists()) {
-    return Object.values<UserFirebase>(snapshot.val()).map((val) =>
-      mapUserFromFirebase(val),
-    );
+    return Object.entries<UserFirebase>(snapshot.val())
+      .map(([key, val]) => mapUserFromFirebase(key, val))
+      .filter((user) => user.tenantId === tenantId || user.tenantId === "");
   } else {
     return [];
   }
@@ -69,14 +80,15 @@ const getUsers = (tenantId: string) => async () => {
 
 const getAvatarUrl = (tenantId: string) => async (userId: string) => {
   const root = ref(db, `users`);
-  const userQuery = query(root, orderByChild("id"), equalTo(userId));
+  const userQuery = query(root, orderByChild("email"), equalTo(userId));
   const snapshot = await get(userQuery);
 
   if (snapshot.exists()) {
     const users = snapshot.val() as Record<string, UserFirebase>;
-    const user = Object.values(users).find(
-      (u) => u.id === userId && u.tenantId === tenantId,
-    );
+    const user = Object.entries(users).find(
+      ([key, u]) => u.tenantId === tenantId && key === userId,
+    )?.[1];
+
     if (user) {
       return user.photoUrl || "";
     } else {
@@ -87,9 +99,38 @@ const getAvatarUrl = (tenantId: string) => async (userId: string) => {
   }
 };
 
+export const createUser = async (user: UserFirebase) => {
+  const userRef = push(ref(db, `users/`));
+
+  await set(userRef, user);
+};
+
+export const getUserByEmail = async (email: string) => {
+  const root = ref(db, `users`);
+  const userQuery = query(root, orderByChild("email"), equalTo(email));
+  const snapshot = await get(userQuery);
+
+  if (snapshot.exists()) {
+    const users = snapshot.val() as Record<string, UserFirebase>;
+    const user = Object.entries(users).find(([_, u]) => u.email === email);
+
+    if (user) {
+      return {
+        ...user[1],
+        uid: user[0],
+      };
+    } else {
+      return null;
+    }
+  } else {
+    return null;
+  }
+};
+
 export const UserRepository = (tenantId: string) => ({
   getUsers: getUsers(tenantId),
   toggleOwner: toggleOwner(tenantId),
   toggleAllowed: toggleAllowed(tenantId),
   getAvatarUrl: getAvatarUrl(tenantId),
+  asignTenantId: asignTenantId(tenantId),
 });

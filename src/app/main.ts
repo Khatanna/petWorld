@@ -10,6 +10,8 @@ import quasarLang from "quasar/lang/es";
 import App from "./App.vue";
 import router from "./router";
 import moment from "moment";
+import { db } from "./config/firebase";
+import { get, ref, set } from "firebase/database";
 
 const myApp = createApp(App);
 

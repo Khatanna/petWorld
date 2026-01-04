@@ -64,7 +64,6 @@ const mapVisitCreateToFirebase = (
   visit: VisitCreate,
   visitRef: DatabaseReference,
 ): VisitFirebase => {
-  console.log(visit.hourOfDelivery);
   return {
     ...visit,
     date: moment(visit.date).format("YYYY-MM-DDTHH:mm:ss"),
@@ -86,12 +85,13 @@ const mapVisitCreateToFirebase = (
           return acc;
         }, {})
       : undefined,
+    deleted: false,
   };
 };
 
 const mapVisitUpdateToFirebase = (
   visit: Visit,
-): Omit<VisitFirebase, "payments" | "createdByUid"> => {
+): Omit<VisitFirebase, "payments" | "createdByUid" | "deleted"> => {
   return {
     color: visit.color,
     petName: visit.petName,
@@ -118,11 +118,19 @@ const getVisits = (tenantId: string) => async (params: VisitServiceParams) => {
     root,
     orderByChild("date"),
     startAt(date.from.startOf("day").format("YYYY-MM-DDTHH:mm:ss")),
-    endBefore(date.to.endOf("day").format("YYYY-MM-DDTHH:mm:ss")),
+    endBefore(
+      date.to
+        .clone()
+        .add(1, "day")
+        .startOf("day")
+        .format("YYYY-MM-DDTHH:mm:ss"),
+    ),
   );
+
   const snapshot = await get(visitsQuery);
   if (snapshot.exists()) {
     return Object.entries<VisitFirebase>(snapshot.val())
+      .filter(([_, visit]) => !visit.deleted)
       .map(([key, val]) => mapVisitFromFirebase(key, val))
       .reverse();
   } else {
@@ -160,7 +168,9 @@ const createVisit = (tenantId: string) => async (visit: VisitCreate) => {
 
 const deleteVisit = (tenantId: string) => async (visitId: string) => {
   const visitRef = ref(db, `visits/${tenantId}/${visitId}`);
-  await set(visitRef, null);
+  await update(visitRef, {
+    deleted: true,
+  });
 };
 
 const rateVisit =

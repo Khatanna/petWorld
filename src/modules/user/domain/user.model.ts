@@ -9,11 +9,10 @@ export type User = {
 };
 
 export type UserFirebase = {
-  allowed: boolean;
-  email: string;
-  id: string;
   name: string;
-  owner: boolean;
+  email: string;
   photoUrl: string;
+  owner: boolean;
+  allowed: boolean;
   tenantId: string;
 };

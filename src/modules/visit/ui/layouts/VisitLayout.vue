@@ -238,7 +238,16 @@ const handleSubmit = (data: VisitCreate | Visit) => {
   } else {
     const visit = data as VisitCreate;
 
-    createVisitMutation(visit);
+    createVisitMutation({
+      ...visit,
+      date: moment({
+        year: calendarStore.selectedDate.clone().year(),
+        month: calendarStore.selectedDate.clone().month(),
+        day: calendarStore.selectedDate.clone().date(),
+        hour: moment().hour(),
+        minute: moment().minute(),
+      }).format("YYYY-MM-DDTHH:mm:ss"),
+    });
   }
   modalOpen.value = false;
 };
@@ -281,7 +290,7 @@ const handleDelete = (id: string) => {
   });
 };
 
-const handleRate = (id: string, rate?: string) => {
+const handleRate = (visit: Visit, rate?: string) => {
   $q.dialog({
     title: "Calificar atención",
     message: "¿Cómo calificaría la atención recibida?",
@@ -294,16 +303,21 @@ const handleRate = (id: string, rate?: string) => {
         { label: "😞 Mala", value: "bad" },
       ],
     },
-    ok: {
-      label: "Calificar",
-      color: "primary",
-    },
+    ok: visit.feedback
+      ? undefined
+      : {
+          label: "Calificar",
+          color: "primary",
+        },
     cancel: {
       label: "Cancelar",
       color: "negative",
     },
   }).onOk((rating) => {
-    rateVisit(id, rating)
+    if (visit.feedback) {
+      return;
+    }
+    rateVisit(visit.id, rating)
       .then(() => {
         $q.notify({
           type: "positive",
@@ -551,6 +565,7 @@ const handleEdit = (visit: Visit) => {
       <q-icon name="error" size="4rem" class="q-mb-md"></q-icon>
       <div>
         Ocurrió un error al cargar las visitas. Por favor, intente nuevamente.
+        {{ showError?.message }}
       </div>
     </div>
 

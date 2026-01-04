@@ -61,6 +61,7 @@ export type VisitFirebase = {
   createdByUid: string;
   state: string;
   feedback?: string;
+  deleted: boolean;
 };
 
 type Service = {

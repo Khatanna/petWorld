@@ -7,7 +7,7 @@ import { UserRepository } from "../../infrastructure/user.repository";
 
 const $q = useQuasar();
 const userStore = useUserStore();
-const { getUsers, toggleAllowed, toggleOwner } = UserRepository(
+const { getUsers, toggleAllowed, toggleOwner, asignTenantId } = UserRepository(
   userStore.userData!.tenantId!,
 );
 
@@ -83,12 +83,43 @@ const { mutate: toggleAllowedMutation } = useMutation({
   },
 });
 
+const { mutate: asignTenantIdMutation } = useMutation({
+  mutationFn: (uid: string) => asignTenantId(uid),
+  onMutate() {
+    $q.notify({
+      type: "info",
+      message: "Asignando tenant al usuario...",
+      timeout: 1000,
+    });
+  },
+  onSuccess() {
+    $q.notify({
+      type: "positive",
+      message: "Tenant asignado al usuario.",
+      timeout: 2000,
+    });
+
+    refetch();
+  },
+  onError(error) {
+    $q.notify({
+      type: "negative",
+      message: `Error al asignar el tenant: ${error.message}`,
+      timeout: 3000,
+    });
+  },
+});
+
 const handleToggleOwner = (uid: string) => {
   toggleOwnerMutation(uid);
 };
 
 const handleToggleAllowed = (uid: string) => {
   toggleAllowedMutation(uid);
+};
+
+const handleAsignTenantId = (uid: string) => {
+  asignTenantIdMutation(uid);
 };
 </script>
 
@@ -160,6 +191,17 @@ const handleToggleAllowed = (uid: string) => {
                         </q-item-label>
                       </q-item-section>
                     </q-item>
+                    <template v-if="!item.allowed && item.tenantId === ''">
+                      <q-separator />
+                      <q-item clickable @click="handleAsignTenantId(item.id)">
+                        <q-item-section avatar>
+                          <q-icon name="domain" color="primary" />
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label> Asignar al este tenant </q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
                   </q-list>
                 </q-menu>
               </q-btn>

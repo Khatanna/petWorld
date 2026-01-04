@@ -65,7 +65,7 @@ const emit = defineEmits<{
   (e: "generateConsent", visit: Visit): void;
   (e: "generateConsent2", visit: Visit): void;
   (e: "registerAnotherPet", id: string): void;
-  (e: "rate", id: string, rate?: string): void;
+  (e: "rate", visit: Visit, rate?: string): void;
   (e: "showDetail", visit: Visit): void;
 }>();
 </script>
@@ -188,7 +188,7 @@ const emit = defineEmits<{
                     clickable
                     v-ripple
                     v-close-popup
-                    @click="emit('rate', item.id, item.feedback)"
+                    @click="emit('rate', item, item.feedback)"
                   >
                     <q-item-section avatar>
                       <q-icon name="star" color="yellow" />
