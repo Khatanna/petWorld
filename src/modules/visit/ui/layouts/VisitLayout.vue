@@ -63,6 +63,16 @@ const selectedVisitForDialog = computed(() => {
     bathed: Boolean(selectedVisit.value?.bathed),
     brushed: Boolean(selectedVisit.value?.brushed),
     choped: Boolean(selectedVisit.value?.choped),
+    checkInTime: selectedVisit.value
+      ? selectedVisit.value.date
+        ? selectedVisit.value.date.clone().format("HH:mm")
+        : "-"
+      : "",
+    hourOfDelivery: selectedVisit.value
+      ? selectedVisit.value.hourOfDelivery
+        ? selectedVisit.value.hourOfDelivery.clone().format("HH:mm")
+        : "-"
+      : "",
   };
 });
 
@@ -303,18 +313,21 @@ const handleRate = (visit: Visit, rate?: string) => {
         { label: "😞 Mala", value: "bad" },
       ],
     },
-    ok: visit.feedback
-      ? undefined
-      : {
-          label: "Calificar",
-          color: "primary",
-        },
+    ok: {
+      label: "Calificar",
+      color: "primary",
+    },
     cancel: {
       label: "Cancelar",
       color: "negative",
     },
   }).onOk((rating) => {
     if (visit.feedback) {
+      $q.notify({
+        type: "info",
+        message: "La visita ya ha sido calificada.",
+        timeout: 2000,
+      });
       return;
     }
     rateVisit(visit.id, rating)
@@ -633,6 +646,28 @@ const handleEdit = (visit: Visit) => {
             />
           </q-btn-group>
         </div>
+        <div class="row">
+          <q-chip
+            class="col"
+            outline
+            square
+            color="primary"
+            text-color="white"
+            icon="mdi-door"
+          >
+            Hora de ingreso: {{ selectedVisitForDialog.checkInTime }}
+          </q-chip>
+          <q-chip
+            class="col"
+            square
+            outline
+            color="primary"
+            text-color="white"
+            icon="meeting_room"
+          >
+            Hora de entrega: {{ selectedVisitForDialog.hourOfDelivery }}
+          </q-chip>
+        </div>
         <div class="q-mt-md">
           <q-expansion-item label="Detalles">
             <div class="q-px-sm">
@@ -661,7 +696,7 @@ const handleEdit = (visit: Visit) => {
                 <div>{{ selectedVisitForDialog.color }}</div>
               </div>
               <div class="row">
-                <div class="text-bold">Tipo decorte</div>
+                <div class="text-bold">Tipo de corte</div>
                 <q-space />
                 <div>{{ selectedVisitForDialog.cutType }}</div>
               </div>
@@ -678,9 +713,9 @@ const handleEdit = (visit: Visit) => {
                 <q-item-label>
                   {{ selectedVisitForDialog.petName }}
                 </q-item-label>
-                <q-item-label caption>{{
-                  selectedVisitForDialog.date
-                }}</q-item-label>
+                <q-item-label caption
+                  >{{ selectedVisitForDialog.date }}
+                </q-item-label>
               </q-item-section>
             </template>
             <q-item>
@@ -697,9 +732,9 @@ const handleEdit = (visit: Visit) => {
                   >Dueño(a):
                   {{ selectedVisitForDialog.ownerName }}</q-item-label
                 >
-                <q-item-label caption>{{
-                  selectedVisitForDialog.phoneNumber
-                }}</q-item-label>
+                <q-item-label caption
+                  >{{ selectedVisitForDialog.phoneNumber }}
+                </q-item-label>
               </q-item-section>
               <q-item-section side>
                 <q-btn

@@ -1,17 +1,15 @@
-import { createApp } from "vue";
-import { Quasar, Notify, Dialog, BottomSheet } from "quasar";
-import { createPinia } from "pinia";
 import "@quasar/extras/material-icons/material-icons.css";
 import "@quasar/extras/mdi-v7/mdi-v7.css";
-import "quasar/src/css/index.sass";
 import { VueQueryPlugin } from "@tanstack/vue-query";
+import { createPinia } from "pinia";
+import { BottomSheet, Dialog, Notify, Quasar } from "quasar";
 import quasarLang from "quasar/lang/es";
+import "quasar/src/css/index.sass";
+import { createApp } from "vue";
 
+import moment from "moment";
 import App from "./App.vue";
 import router from "./router";
-import moment from "moment";
-import { db } from "./config/firebase";
-import { get, ref, set } from "firebase/database";
 
 const myApp = createApp(App);
 
