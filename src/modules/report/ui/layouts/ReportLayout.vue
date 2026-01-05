@@ -50,10 +50,12 @@ type QuasarRange = {
 const primaryColor = getCssVar("primary") || "#1976d2";
 const loadingReport = ref<string | null>(null);
 
-// v-models para los date pickers
 const monthSelected = ref("");
 const customRangeSelected = ref({ from: "", to: "" });
-const ratesRangeSelected = ref({ from: "", to: "" });
+const ratesRangeSelected = ref<{ from: string; to: string } | null | string>({
+  from: "",
+  to: "",
+});
 
 const showLoadingDialog = (message: string) => {
   return $q.dialog({
@@ -68,8 +70,17 @@ const showLoadingDialog = (message: string) => {
 
 const handleGenerateReportAll = async (range: QuasarRange) => {
   if (!users.value) return;
-  if (!range.from || !range.to) return;
 
+  const from = range.from ?? {
+    year: range.year,
+    month: range.month,
+    day: range.day,
+  };
+  const to = range.to ?? {
+    year: range.year,
+    month: range.month,
+    day: range.day,
+  };
   loadingReport.value = "custom";
 
   const loadingDialog = showLoadingDialog(
@@ -77,20 +88,20 @@ const handleGenerateReportAll = async (range: QuasarRange) => {
   );
 
   try {
-    const from = moment()
-      .year(range.from.year)
-      .month(range.from.month - 1)
-      .date(range.from.day)
+    const fromMoment = moment()
+      .year(from.year)
+      .month(from.month - 1)
+      .date(from.day)
       .startOf("day");
 
-    const to = moment()
-      .year(range.to.year)
-      .month(range.to.month - 1)
-      .date(range.to.day)
+    const toMoment = moment()
+      .year(to.year)
+      .month(to.month - 1)
+      .date(to.day)
       .endOf("day");
 
     const visits = await getVisits({
-      date: { from, to },
+      date: { from: fromMoment, to: toMoment },
     });
 
     if (visits.length === 0) {
@@ -98,7 +109,9 @@ const handleGenerateReportAll = async (range: QuasarRange) => {
       $q.notify({
         type: "warning",
         message: "No se encontraron visitas en el rango seleccionado",
-        caption: `${from.format("DD/MM/YYYY")} - ${to.format("DD/MM/YYYY")}`,
+        caption: `${fromMoment.format("DD/MM/YYYY")} - ${toMoment.format(
+          "DD/MM/YYYY",
+        )}`,
         position: "top",
         timeout: 4000,
         icon: "event_busy",
@@ -288,7 +301,17 @@ const handleGenerateReportMonth = async (range: QuasarRange) => {
 
 const handleGenerateReportRates = async (range: QuasarRange) => {
   if (!users.value) return;
-  if (!range.from || !range.to) return;
+
+  const from = range.from ?? {
+    year: range.year,
+    month: range.month,
+    day: range.day,
+  };
+  const to = range.to ?? {
+    year: range.year,
+    month: range.month,
+    day: range.day,
+  };
 
   loadingReport.value = "rates";
 
@@ -297,20 +320,20 @@ const handleGenerateReportRates = async (range: QuasarRange) => {
   );
 
   try {
-    const from = moment()
-      .year(range.from.year)
-      .month(range.from.month - 1)
-      .date(range.from.day)
+    const fromMoment = moment()
+      .year(from.year)
+      .month(from.month - 1)
+      .date(from.day)
       .startOf("day");
 
-    const to = moment()
-      .year(range.to.year)
-      .month(range.to.month - 1)
-      .date(range.to.day)
+    const toMoment = moment()
+      .year(to.year)
+      .month(to.month - 1)
+      .date(to.day)
       .endOf("day");
 
     const visits = await getVisits({
-      date: { from, to },
+      date: { from: fromMoment, to: toMoment },
     });
 
     if (visits.length === 0) {
@@ -318,7 +341,9 @@ const handleGenerateReportRates = async (range: QuasarRange) => {
       $q.notify({
         type: "warning",
         message: "No se encontraron visitas con calificaciones",
-        caption: `${from.format("DD/MM/YYYY")} - ${to.format("DD/MM/YYYY")}`,
+        caption: `${fromMoment.format("DD/MM/YYYY")} - ${toMoment.format(
+          "DD/MM/YYYY",
+        )}`,
         position: "top",
         timeout: 4000,
         icon: "event_busy",
@@ -506,9 +531,7 @@ const reportOptions: ReportOption[] = [
                     range
                     @update:model-value="
                       (_v, _r, val) => {
-                        if (val.from && val.to) {
-                          report.onDateSelect?.(val);
-                        }
+                        report.onDateSelect?.(val);
                       }
                     "
                     :color="report.color"
@@ -544,7 +567,7 @@ const reportOptions: ReportOption[] = [
                   )
                 }}
               </template>
-              <template v-else>
+              <template v-else-if="report.modelValue.value.from">
                 {{
                   moment(report.modelValue.value.from, "YYYY/MM/DD").format(
                     "DD/MM/YY",
@@ -553,6 +576,13 @@ const reportOptions: ReportOption[] = [
                 -
                 {{
                   moment(report.modelValue.value.to, "YYYY/MM/DD").format(
+                    "DD/MM/YY",
+                  )
+                }}
+              </template>
+              <template v-else>
+                {{
+                  moment(report.modelValue.value, "YYYY/MM/DD").format(
                     "DD/MM/YY",
                   )
                 }}

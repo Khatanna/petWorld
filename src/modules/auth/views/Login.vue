@@ -35,7 +35,7 @@ const loginGoogle = async () => {
         }
         userStore.setUserData(user);
       } else {
-        createUser({
+        createUser(userCredential.user.uid, {
           allowed: false,
           owner: false,
           email: userCredential.user.providerData[0]?.email || "",

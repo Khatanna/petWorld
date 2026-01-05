@@ -572,6 +572,26 @@ export const generateRateReport = async (visits: Visit[], tenantId: string) => {
     },
   });
 
+  // generate total ratings summary
+  const totalRatings = rateTableData.length;
+  const greatRatings = visits.filter((v) => v.feedback === "great").length;
+  const mediumRatings = visits.filter((v) => v.feedback === "medium").length;
+  const badRatings = visits.filter((v) => v.feedback === "bad").length;
+
+  yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+  doc.setFontSize(11);
+  doc.text(`Resumen de Calificaciones:`, 15, yPosition);
+  yPosition += 7;
+  doc.setFontSize(10);
+  doc.text(`Total de Calificaciones: ${totalRatings}`, 15, yPosition);
+  yPosition += 6;
+  doc.text(`Calificaciones Excelente: ${greatRatings}`, 15, yPosition);
+  yPosition += 6;
+  doc.text(`Calificaciones Regular: ${mediumRatings}`, 15, yPosition);
+  yPosition += 6;
+  doc.text(`Calificaciones Mala: ${badRatings}`, 15, yPosition);
+
   // Descargar PDF
   doc.save("Reporte_Calificaciones.pdf");
 };

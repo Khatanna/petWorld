@@ -3,7 +3,6 @@ import {
   equalTo,
   get,
   orderByChild,
-  push,
   query,
   ref,
   set,
@@ -66,7 +65,6 @@ const asignTenantId = (tenantId: string) => async (userId: string) => {
 
 const getUsers = (tenantId: string) => async () => {
   const root = ref(db, `users`);
-  // const usersQuery = query(root, orderByChild("tenantId"), equalTo(tenantId));
   const snapshot = await get(root);
 
   if (snapshot.exists()) {
@@ -99,8 +97,8 @@ const getAvatarUrl = (tenantId: string) => async (userId: string) => {
   }
 };
 
-export const createUser = async (user: UserFirebase) => {
-  const userRef = push(ref(db, `users/`));
+export const createUser = async (key: string, user: UserFirebase) => {
+  const userRef = ref(db, `users/${key}`);
 
   await set(userRef, user);
 };
